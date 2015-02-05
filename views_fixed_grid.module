@@ -1,0 +1,102 @@
+<?php
+
+/**
+ * @file
+ * This module is in charge of generating the carousels based on the ouput of the views.
+ */
+ 
+/**
+ * Implements hook_views_api().
+ */
+function views_fixed_grid_views_api() {
+  return array('api' => 3.0);
+}
+
+/**
+ * Preprocess function for the views_view_fixed_grid theme function
+ * 
+ * If random order is selected the coordinates for each value are
+ * randomly generated.
+ */
+function template_preprocess_views_view_fixed_grid(&$vars) {
+  $view = $vars['view'];
+  // Get the options selected in the view.
+  $opts_plugin = $view->style_plugin->options;
+  // Get the maximum number of items if selected
+  if (!empty($opts_plugin['maxitems']) && $opts_plugin['maxitems']) {
+    $max = $opts_plugin['maxitems'];
+  }
+  else {
+    $max = $opts_plugin['rows'] * $opts_plugin['columns'];
+  }
+  // If there are not enough items to fill up to the max, then the max
+  // is the number of items retrieved.
+  $max = $max > count($view->result) ? count($view->result) : $max;
+  $indexes = array();
+  for ($i = 0; $i < $max; $i++) {
+    // Generate the random coordinates if needed
+    if ($opts_plugin['alignment'] == 'random') {
+      $index = rand(0, ($opts_plugin['rows'] * $opts_plugin['columns']) - 1);
+      while (in_array($index, $indexes)) {
+        $index = rand(0, ($opts_plugin['rows'] * $opts_plugin['columns']) - 1);
+      }
+    }
+    else {
+      $index = $i;
+    }
+    $indexes[] = $index;
+  }
+
+  $rows = array();
+  $printed = 0;
+  for ($row_number = 0; $row_number < $opts_plugin['rows']; $row_number++) { 
+    $row = array();
+    // Set row classes
+    $row_classes = array();
+    if ($row_number == 0) {
+      $row_classes[] = 'row-first';
+    }
+    else if ($row_number == $opts_plugin['rows'] - 1) {
+      $row_classes[] = 'row-last';
+    }
+    else {
+      $row_classes[] = 'row-' . ($row_number + 1);
+    }
+    $vars['row_classes'][$row_number] = implode(' ', $row_classes);
+    for ($column_number = 0; $column_number < $opts_plugin['columns']; $column_number++) {
+      // Set the column classes
+      $column_classes = array();
+      if ($column_number == 0) {
+        $column_classes[] = 'col-first';
+      }
+      else if ($column_number == $opts_plugin['columns'] - 1) {
+        $column_classes[] = 'col-last';
+      }
+      else {
+        $column_classes[] = 'col-' . ($column_number + 1);
+      }
+      
+      $index = $row_number * $opts_plugin['columns'] + $column_number;
+      if (in_array($index, $indexes)) {
+        $row[] = $vars['rows'][$printed];
+        $printed++;
+        $column_classes[] = 'full-cell';
+        $column_classes[] = 'full-cell-' . ($index + 1);
+      }
+      else {
+        $row[] = NULL;
+        $column_classes[] = 'empty-cell';
+      }
+      $vars['column_classes'][$row_number][$column_number] = implode(' ', $column_classes);
+    }
+    $rows[] = $row;
+  }
+  $vars['rows'] = $rows;
+
+  $vars['numrows'] = $opts_plugin['rows'];
+  $vars['numcols'] = $opts_plugin['columns'];
+  $vars['class'] = 'views-view-fixed-grid';
+  if (!empty($handler->options['summary'])) {
+    $vars['attributes'] = drupal_attributes(array('summary' => $handler->options['summary']));
+  }
+}

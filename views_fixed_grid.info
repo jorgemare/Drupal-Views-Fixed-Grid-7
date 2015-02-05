@@ -1,0 +1,8 @@
+name = Views Fixed Grid
+description = Provides a plugin style creating a grid of Fixed size. Then the rows can be placed randomly in the grid.
+package = views
+dependencies[] = views
+core = 7.x
+
+files[] = views_plugin_style_fixed_grid.inc
+files[] = views_fixed_grid.views.inc
